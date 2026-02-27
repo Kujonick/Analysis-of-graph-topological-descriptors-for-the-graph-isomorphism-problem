@@ -1,5 +1,5 @@
-# Graph-Isomorphism
-
+# Analysis of graph topological descriptors for the graph isomorphism problem
+This Repo is a codebase for my Master's Thesis (of the same title) and continuation of my Pre-Thesis Seminar, which were then done with [Michał](https://github.com/mnozkiewicz)
 
 ## Setup
 
