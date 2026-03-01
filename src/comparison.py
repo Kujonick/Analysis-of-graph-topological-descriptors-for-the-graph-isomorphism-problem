@@ -10,8 +10,8 @@ import numpy as np
 import pandas as pd
 import xxhash
 
-from descriptors.embeddings import create_embedding_function, normalize_features
-from graph_utils.reading import read_graph6, read_dataset_properties
+from src.descriptors.embeddings import create_embedding_function, normalize_features
+from src.graph_utils.reading import read_graph6, read_dataset_properties
 
 SAVING_PATH = "processed_datasets"
 
