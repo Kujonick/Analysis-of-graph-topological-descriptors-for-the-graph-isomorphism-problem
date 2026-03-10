@@ -1,4 +1,5 @@
 from typing import Generator, Dict, Any
+from src.settings import Settings
 
 import networkit as nk
 import networkx as nx
@@ -6,8 +7,9 @@ import numpy as np
 import json
 import os
 
-READ_PATH = "raw_datasets"
-METADATA_FILE = "metadata.json"
+
+READ_DIR = Settings.raw_datasets_dir
+METADATA_PATH = Settings.raw_metadata_path
 
 
 def read_graph6(
@@ -17,7 +19,7 @@ def read_graph6(
     def output_mapper(graph: nx.Graph):
         return nk.nxadapter.nx2nk(graph) if output_format == "networkit" else graph
 
-    path = os.path.join(READ_PATH, f"{name}.g6" if ".g6" not in name else name)
+    path = os.path.join(READ_DIR, f"{name}.g6" if ".g6" not in name else name)
     with open(path, "r") as f:
         for line in map(str.strip, f):
             if not line:
@@ -37,9 +39,8 @@ def evaluate_matedata(name: str) -> Dict[str, Any]:
 
 
 def read_metadata() -> Dict[str, dict]:
-    metadata_path = os.path.join(READ_PATH, METADATA_FILE)
-    if os.path.exists(metadata_path):
-        with open(metadata_path, "r") as f:
+    if os.path.exists(METADATA_PATH):
+        with open(METADATA_PATH, "r") as f:
             metadata = json.load(f)
     else:
         metadata = {}
@@ -55,8 +56,7 @@ def read_dataset_properties(name) -> Dict[str, Any]:
 
     metadata[name] = evaluate_matedata(name)
 
-    metadata_path = os.path.join(READ_PATH, METADATA_FILE)
-    with open(metadata_path, "w") as f:
+    with open(METADATA_PATH, "w") as f:
         json.dump(metadata, f, indent=4)
 
     return metadata[name]

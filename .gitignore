@@ -10,8 +10,7 @@ wheels/
 .venv
 
 # datasets
-raw_datasets/*
-processed_datasets/*
+datasets/*
 !*.gitkeep
 
 # VSCode

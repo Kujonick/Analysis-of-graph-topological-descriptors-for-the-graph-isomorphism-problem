@@ -12,8 +12,9 @@ import xxhash
 
 from src.descriptors.embeddings import create_embedding_function, normalize_features
 from src.graph_utils.reading import read_graph6, read_dataset_properties
+from src.settings import Settings
 
-SAVING_PATH = "processed_datasets"
+SAVING_PATH = Settings.processed_datasets_dir
 
 CPU_COUNT: int = psutil.cpu_count()
 ORDER = ["features", "dataset_name"]

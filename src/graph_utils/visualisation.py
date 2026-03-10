@@ -1,14 +1,19 @@
-from typing import Union
+from typing import Union, Optional, Dict
 
 import networkit as nk
 import networkx as nx
 
 
-def plot_graph(graph: Union[nx.Graph, nk.Graph]) -> None:
+def plot_graph(
+        graph: Union[nx.Graph, nk.Graph],
+        layout: Optional[Dict]=None
+        ) -> None:
+    
     if isinstance(graph, nk.Graph):
         graph = nk.nxadapter.nk2nx(graph)
 
-    layout = nx.kamada_kawai_layout(graph)
+    if layout is None:
+        layout = nx.kamada_kawai_layout(graph)
     nx.draw(
         graph,
         with_labels=True,
