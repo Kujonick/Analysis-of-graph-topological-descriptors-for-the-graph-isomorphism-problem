@@ -1,4 +1,4 @@
-from typing import Generator, Dict, Any
+from typing import Generator, Dict, Any, Optional
 from src.settings import Settings
 
 import networkit as nk
@@ -8,18 +8,20 @@ import json
 import os
 
 
-READ_DIR = Settings.raw_datasets_dir
 METADATA_PATH = Settings.raw_metadata_path
 
 
 def read_graph6(
-    name: str, output_format: str = "networkit"
+    name: str, 
+    output_format: str = "networkit",
 ) -> Generator[nk.Graph, None, None]:
 
     def output_mapper(graph: nx.Graph):
         return nk.nxadapter.nx2nk(graph) if output_format == "networkit" else graph
 
-    path = os.path.join(READ_DIR, f"{name}.g6" if ".g6" not in name else name)
+    filename = (f"{name}.g6" if ".g6" not in name else name)
+    path = Settings.raw_datasets_dir / filename
+        
     with open(path, "r") as f:
         for line in map(str.strip, f):
             if not line:
@@ -30,14 +32,6 @@ def read_graph6(
             yield graph
 
 
-def evaluate_matedata(name: str) -> Dict[str, Any]:
-
-    graph_reader = read_graph6(name)
-    node_count: np.ndarray = np.array([graph.numberOfNodes() for graph in graph_reader])
-    graph_count = node_count.shape[0]
-    return {"number_of_nodes": int(np.median(node_count)), "graph_count": graph_count}
-
-
 def read_metadata() -> Dict[str, dict]:
     if os.path.exists(METADATA_PATH):
         with open(METADATA_PATH, "r") as f:
@@ -46,17 +40,3 @@ def read_metadata() -> Dict[str, dict]:
         metadata = {}
     return metadata
 
-
-def read_dataset_properties(name) -> Dict[str, Any]:
-
-    metadata = read_metadata()
-
-    if name in metadata:
-        return metadata[name]
-
-    metadata[name] = evaluate_matedata(name)
-
-    with open(METADATA_PATH, "w") as f:
-        json.dump(metadata, f, indent=4)
-
-    return metadata[name]

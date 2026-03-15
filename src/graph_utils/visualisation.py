@@ -6,7 +6,8 @@ import networkx as nx
 
 def plot_graph(
         graph: Union[nx.Graph, nk.Graph],
-        layout: Optional[Dict]=None
+        layout: Optional[Dict]=None,
+        ax=None
         ) -> None:
     
     if isinstance(graph, nk.Graph):
@@ -22,4 +23,5 @@ def plot_graph(
         font_size=10,
         font_color="black",
         pos=layout,
+        ax=ax,
     )

@@ -10,41 +10,38 @@ import numpy as np
 import pandas as pd
 import xxhash
 
-from src.descriptors.embeddings import create_embedding_function, normalize_features
-from src.graph_utils.reading import read_graph6, read_dataset_properties
-from src.settings import Settings
+from .graph_utils.dataset import Dataset
+from .descriptors.embeddings import create_embedding_function, normalize_features
+from .graph_utils.reading import read_graph6
+from .settings import Settings
 
 SAVING_PATH = Settings.processed_datasets_dir
 
 CPU_COUNT: int = psutil.cpu_count()
-ORDER = ["features", "dataset_name"]
+ORDER = ["features", "dataset"]
 
 
-def open_test_enviroment(func):
-    """Decorator for doing basic reading from the file + preparing embedding function. The `func` parameter must take graph_reader and `embedding_function`"""
+def open_test_enviroment(dataset: Dataset, features, **function_kwargs):
 
-    @functools.wraps(func)
-    def wrapper(dataset_name, features, **function_kwargs):
+    metadata = dataset.get_metadata()
 
-        metadata = read_dataset_properties(dataset_name)
+    graph_reader = iter(dataset)
 
-        graph_reader = read_graph6(dataset_name)
-
-        embedding_function = create_embedding_function(
-            features,
-            bins_per_feature=metadata["number_of_nodes"] ** 2,
-            **function_kwargs,
-        )
-        return func(graph_reader, embedding_function, metadata)
-
-    return wrapper
+    embedding_function = create_embedding_function(
+        features,
+        bins_per_feature=metadata["number_of_nodes"] ** 2,
+        **function_kwargs,
+    )
+    return graph_reader, embedding_function
 
 
-@open_test_enviroment
+
 def select_problematic_ids(
-    graph_reader, embedding_function: Callable, metadata
+    dataset: Dataset, features, **function_kwargs
 ) -> Dict[str, list[int]]:
     """goes through all the graphs and selects only the ones that have collisions on embedding"""
+
+    graph_reader, embedding_function = open_test_enviroment(dataset, features, **function_kwargs)
 
     collisions: dict[str, list[int]] = {}
     hashes: dict[str, int] = {}
@@ -63,11 +60,14 @@ def select_problematic_ids(
     return collisions
 
 
-@open_test_enviroment
 def find_optimal_histogram_ranges(
-    graph_reader, embedding_function: Callable, metadata
+    dataset: Dataset, features, **function_kwargs
 ) -> List[Tuple[float, float]]:
     """function that goes through all descriptor values per graphs and finds minimum and maximum of each feature value"""
+
+    graph_reader, embedding_function = open_test_enviroment(dataset, features, **function_kwargs)
+    metadata = dataset.get_metadata()
+    
     first_graph = next(graph_reader)
     function_values: List[np.ndarray] = embedding_function(first_graph)
     function_values = [arr[~np.isnan(arr)] for arr in function_values]
@@ -104,16 +104,16 @@ def find_optimal_histogram_ranges(
 
 
 def reduce_number_of_features(
-    stored_ranges_dict, dataset_name, features, **other_features
+    stored_ranges_dict, dataset: Dataset, features, **other_features
 ):
-    if dataset_name not in stored_ranges_dict:
-        stored_ranges_dict[dataset_name] = {}
+    if dataset.name not in stored_ranges_dict:
+        stored_ranges_dict[dataset.name] = {}
         return features
 
     features_to_be_used = [
         feature
         for feature in features
-        if feature not in stored_ranges_dict[dataset_name]
+        if feature not in stored_ranges_dict[dataset.name]
     ]
     return features_to_be_used
 
@@ -122,17 +122,17 @@ def update_histogram_ranges(
     stored_ranges_dict,
     features_to_update,
     histogram_ranges,
-    dataset_name,
+    dataset: Dataset,
     **other_features,
 ):
     for feature, ranges in zip(features_to_update, histogram_ranges):
-        stored_ranges_dict[dataset_name][feature] = tuple(map(float, ranges))
+        stored_ranges_dict[dataset.name][feature] = tuple(map(float, ranges))
 
 
 def read_histogram_ranges(
-    stored_ranges_dict, features, dataset_name, **other_features
+    stored_ranges_dict, features, dataset: Dataset, **other_features
 ) -> List[Tuple[int, int]]:
-    return [stored_ranges_dict[dataset_name][feature] for feature in features]
+    return [stored_ranges_dict[dataset.name][feature] for feature in features]
 
 
 def _values_equal(a, b):
@@ -274,7 +274,7 @@ def tests(arguments_lists: List[Dict[str, Any]]):
                         pd.DataFrame(
                             [
                                 dict(
-                                    **{key: kwargs[key] for key in ORDER},
+                                    **{key: (kwargs[key].name if key=='dataset' else kwargs[key]) for key in ORDER},
                                     result=[int(n) for n in result],
                                 )
                                 for result, kwargs in zip(results, kwargs_batch)
