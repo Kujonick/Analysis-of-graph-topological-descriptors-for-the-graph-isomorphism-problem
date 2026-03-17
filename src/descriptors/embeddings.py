@@ -16,7 +16,7 @@ def get_function(name: str) -> Callable[[nk.Graph], np.ndarray | list[np.ndarray
     raise ValueError(f"Unknown function name: {name}")
 
 
-def normalize_features(features):
+def normalize_features(features) -> Tuple[str]:
     distinct_features = []
     for feature in features:
         if feature == "moltop":
@@ -35,11 +35,11 @@ def normalize_features(features):
             )
         else:
             distinct_features.append(feature)
-    return sorted(set(distinct_features))
+    return tuple(sorted(set(distinct_features)))
 
 
 def create_embedding_function(
-    features: list[str],
+    features: Tuple[str, ...],
     bins_per_feature: int,
     histogram_ranges: Optional[List[Tuple[int, int]]] = None,
     embeddings: bool = True,  # if set to False, function returns raw values of function
