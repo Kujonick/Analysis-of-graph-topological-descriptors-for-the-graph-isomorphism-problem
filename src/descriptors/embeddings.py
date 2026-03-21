@@ -63,7 +63,8 @@ def create_embedding_function(
                 )
             ]
             embedding = np.concatenate(edge_histograms)
+            return embedding
 
-        return embedding if embeddings else edge_features
+        return edge_features
 
     return combined_features
