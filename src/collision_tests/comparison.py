@@ -22,10 +22,10 @@ SAVING_PATH = Settings.processed_datasets_dir
 CPU_COUNT: int = psutil.cpu_count()
 ORDER = ["features", "dataset_name"]
 
-def single_test(parameters: TestParameters, histogram_ranges):
+def single_test(parameters: TestParameters, histogram_ranges) -> np.ndarray:
     nk.setNumberOfThreads(1)
 
-    result = select_problematic_ids(parameters, embeddings=True, histogram_ranges=histogram_ranges)  # type: ignore
+    result = select_problematic_ids(parameters, histogram_ranges=histogram_ranges)  # type: ignore
     result = (
         [item for sublist in result.values() for item in sublist]
         if result
@@ -34,15 +34,16 @@ def single_test(parameters: TestParameters, histogram_ranges):
     return result
 
 
-def single_histogram_range_calc(parameters: TestParameters, features_to_be_used) -> List[Tuple[float, float]]:
+def single_histogram_range_calc(parameters: TestParameters, features_to_be_used: Tuple[str, ...]) -> List[Tuple[float, float]]:
     nk.setNumberOfThreads(1)
 
     parameters2 = TestParameters(features=features_to_be_used, dataset=parameters.dataset)
-    histogram_ranges = find_optimal_histogram_ranges(parameters2, embeddings=False)
+    histogram_ranges = find_optimal_histogram_ranges(parameters2)
     return histogram_ranges
 
 class TestOperator:
-    def __init__(self):
+    def __init__(self, single_thread: bool=False):
+        self.single_thread = single_thread
         output_path = os.path.join(SAVING_PATH, "table.parquet")
         self.output_path = output_path
 
@@ -94,7 +95,7 @@ class TestOperator:
     ) -> List[Tuple[float, float]]:
         return [self.histogram_ranges[parameters.dataset.name][feature] for feature in parameters.features]
 
-    def _run_parralell_histograms(self, features_for_histogram_calc):
+    def _run_parralell_histograms(self, features_for_histogram_calc: List[Tuple[TestParameters, Tuple[str, ...]]]):
         n_jobs = len(features_for_histogram_calc)
         histogram_ranges_batch :List[List[Tuple[float, float]]]= Parallel(n_jobs=n_jobs)(
             delayed(single_histogram_range_calc)(
@@ -106,6 +107,16 @@ class TestOperator:
             histogram_ranges_batch, features_for_histogram_calc
         ):
             self.update_histogram_ranges(
+                features_to_be_used,
+                histogram_ranges,
+                parameters,
+            )
+
+    def _run_single_histogram(self, parameters, features_to_be_used):
+        parameters2 = TestParameters(features=features_to_be_used, dataset=parameters.dataset)
+        histogram_ranges = find_optimal_histogram_ranges(parameters2)
+
+        self.update_histogram_ranges(
                 features_to_be_used,
                 histogram_ranges,
                 parameters,
@@ -131,7 +142,13 @@ class TestOperator:
                     progress_bar.update(1)
                     continue
 
-                if len(features_for_histogram_calc) == CPU_COUNT:
+                if self.single_thread:
+                    self._run_single_histogram(*features_for_histogram_calc[0])
+                    progress_bar.update(1)
+                    features_for_histogram_calc.clear()
+
+
+                elif len(features_for_histogram_calc) == CPU_COUNT:
                     self._run_parralell_histograms(features_for_histogram_calc)
                     progress_bar.update(CPU_COUNT)
 
@@ -146,20 +163,32 @@ class TestOperator:
             self,
             filtered_parameters: List[TestParameters]
         ):
+        step = 1 if self.single_thread else CPU_COUNT
 
         with tqdm(total=len(filtered_parameters)) as progress_bar:
-                for i in range(0, len(filtered_parameters), CPU_COUNT):
-                    parameters_batch = filtered_parameters[i : i + CPU_COUNT]
+                for i in range(0, len(filtered_parameters), step):
+                    parameters_batch = filtered_parameters[i : i + step]
                     histogram_ranges_batch = [
                         self.read_histogram_ranges(parameters)
                         for parameters in parameters_batch
                     ]
-                    results = Parallel(n_jobs=CPU_COUNT)(
-                        delayed(single_test)(parameters, histogram_ranges)
-                        for parameters, histogram_ranges in zip(
-                            parameters_batch, histogram_ranges_batch
+
+
+                    if self.single_thread:
+                        result = select_problematic_ids(parameters_batch[0], histogram_ranges=histogram_ranges_batch[0])  # type: ignore
+                        result = (
+                            [item for sublist in result.values() for item in sublist]
+                            if result
+                            else np.array([-1])
                         )
-                    )
+                        results = [result]
+                    else:
+                        results = Parallel(n_jobs=CPU_COUNT)(
+                            delayed(single_test)(parameters, histogram_ranges)
+                            for parameters, histogram_ranges in zip(
+                                parameters_batch, histogram_ranges_batch
+                            )
+                        )
 
                     self.outputs_df = pd.concat(
                         [
@@ -185,7 +214,6 @@ class TestOperator:
             parameters_list: List[TestParameters]):
 
         filtered_parameters = self.filter_parameters(parameters_list)
-
         try:
             self.calculate_histogram(filtered_parameters)
             self.calculate_collisions(filtered_parameters)

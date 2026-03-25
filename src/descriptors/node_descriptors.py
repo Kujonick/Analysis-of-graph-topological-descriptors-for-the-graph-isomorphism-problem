@@ -3,6 +3,7 @@ from functools import wraps, partial
 import networkit as nk
 import networkx as nx
 import numpy as np
+import matplotlib.pyplot as plt
 
 from networkit.centrality import (
     EigenvectorCentrality,
@@ -146,3 +147,10 @@ def calculate_lcc(graph: nk.Graph) -> np.ndarray:
     desc = LocalClusteringCoefficient(graph)
     desc.run()
     return np.array(desc.scores(), np.float32)
+
+# @add_to_dict('test')
+# def test_descriptor(graph: nk.Graph) -> np.ndarray:
+#     nx_graph = nk.nxadapter.nk2nx(graph)
+#     nx.draw(nx_graph, with_labels=True)
+#     plt.show()
+#     return np.zeros((nx_graph.number_of_nodes(),))

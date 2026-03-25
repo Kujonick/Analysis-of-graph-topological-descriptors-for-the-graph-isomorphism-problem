@@ -13,7 +13,7 @@ from typing import Callable, Generator, Tuple
 
 @dataclass
 class TestParameters():
-    features: Tuple[str]
+    features: Tuple[str, ...]
     dataset: Dataset
 
     def create_dict(self):

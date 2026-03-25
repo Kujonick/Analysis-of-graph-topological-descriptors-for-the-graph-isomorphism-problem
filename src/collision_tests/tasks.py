@@ -47,9 +47,7 @@ def find_optimal_histogram_ranges(
         (np.min(arr), np.max(arr)) if len(arr) else (np.inf, -np.inf)
         for arr in function_values
     ]
-    i = 0
     for graph in graph_reader:
-        i += 1
         function_values = embedding_function(graph)
         function_values = [arr[~np.isnan(arr)] for arr in function_values]
         hist_ranges = [
@@ -60,18 +58,27 @@ def find_optimal_histogram_ranges(
             )
             for ranges, values in zip(hist_ranges, function_values)
         ]
+
     # in situation that range is too small and there is no way to fit all bins into
     for i, range in enumerate(hist_ranges):
         right, left = range[1], range[0]
-        step = 1e-4
-        limit = 2 * metadata["number_of_nodes"] ** 2
-        while True:
-            a = np.linspace(left, right, limit, dtype=np.float32)
-            if len(np.unique(a)) == len(a):
-                break
-            right += step
+        if not np.isfinite(right): right = 0
+        if not np.isfinite(left): left = 0
 
-        hist_ranges[i] = (left, right)
+        x_min = np.float32(left)
+        x_max = np.float32(right)
+        
+        scale = max(abs(x_min), abs(x_max))
+        ulp = np.spacing(np.float32((scale))) # Unit in the Last Place - distance between two representable numbers
+        
+        d_min = metadata['number_of_nodes']**2 * ulp
+        if d_min <= right - left:
+            hist_ranges[i] = (left, right)
+        else:
+            avg = (right - left) // 2
+            hist_ranges[i] = (avg + d_min, avg + d_min)
+
+
     return hist_ranges
 
 

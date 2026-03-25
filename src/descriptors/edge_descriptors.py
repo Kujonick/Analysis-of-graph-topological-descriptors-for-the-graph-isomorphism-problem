@@ -131,6 +131,7 @@ def local_degree_score(graph: nk.Graph) -> np.ndarray:
 
 @add_to_dict("scan")
 def calculate_scan_structural_similarity_score(graph: nk.Graph) -> np.ndarray:
+    graph.indexEdges()
     triangles = TriangleEdgeScore(graph)
     triangles.run()
     triangles = triangles.scores()
@@ -143,6 +144,7 @@ def calculate_scan_structural_similarity_score(graph: nk.Graph) -> np.ndarray:
 
 @add_to_dict("cn_quadrangle")
 def calculate_CN_quadrangle_edge_score(graph: nk.Graph) -> np.ndarray:
+    graph.indexEdges()
     desc = ChibaNishizekiQuadrangleEdgeScore(graph)
     desc.run()
     return np.array(desc.scores(), np.float32)
@@ -150,6 +152,7 @@ def calculate_CN_quadrangle_edge_score(graph: nk.Graph) -> np.ndarray:
 
 @add_to_dict("cn_triangle")
 def calculate_CN_triangle_edge_score(graph: nk.Graph) -> np.ndarray:
+    graph.indexEdges()
     desc = ChibaNishizekiTriangleEdgeScore(graph)
     desc.run()
     return np.array(desc.scores(), np.float32)
@@ -157,6 +160,7 @@ def calculate_CN_triangle_edge_score(graph: nk.Graph) -> np.ndarray:
 
 @add_to_dict("lss")
 def calculate_local_similarity_sparsification(graph: nk.Graph) -> np.ndarray:
+    graph.indexEdges()
     triangles = TriangleEdgeScore(graph)
     triangles.run()
     triangles = triangles.scores()
@@ -169,6 +173,7 @@ def calculate_local_similarity_sparsification(graph: nk.Graph) -> np.ndarray:
 
 @add_to_dict("simmelian_sparsifier_np")  # Np - non parametric
 def calculate_simmelian_sparsifier(graph: nk.Graph) -> np.ndarray:
+    graph.indexEdges()
     score = SimmelianSparsifierNonParametric()
     scores = score.scores(graph)
     return np.array(scores, np.float32)
