@@ -10,7 +10,7 @@ from .transforms import get_transform
 
 def get_function(name: str) -> Callable[[nk.Graph], np.ndarray | list[np.ndarray]]:
 
-    parts = name.split(':')
+    parts = name.split(":")
     transforms = parts[1:]
     name = parts[0]
 
@@ -25,7 +25,7 @@ def get_function(name: str) -> Callable[[nk.Graph], np.ndarray | list[np.ndarray
         for f in functions:
             x = f(x)
         return x
-    
+
     return chained
 
     raise ValueError(f"Unknown function name: {name}")
@@ -34,8 +34,8 @@ def get_function(name: str) -> Callable[[nk.Graph], np.ndarray | list[np.ndarray
 def normalize_features(features: Tuple[str, ...]) -> Tuple[str, ...]:
     distinct_features = []
     for feature in features:
-        parts = feature.split(':')
-        transforms = ':'.join(parts[1:])
+        parts = feature.split(":")
+        transforms = ":".join(parts[1:])
         name = parts[0]
 
         if name == "moltop":
@@ -45,20 +45,28 @@ def normalize_features(features: Tuple[str, ...]) -> Tuple[str, ...]:
         elif name == "ltp":
             new_features = ["jaccard_index", "edge_betweenness", "lds"]
         elif name == "ltp_normalized":
-            new_features = ["jaccard_index_normalized", "edge_betweenness_normalized", "lds"]
+            new_features = [
+                "jaccard_index_normalized",
+                "edge_betweenness_normalized",
+                "lds",
+            ]
         elif name == "ldp":
             new_features = ["ldp_degree", "ldp_min", "ldp_max", "ldp_mean", "ldp_std"]
         else:
             new_features = [name]
-        
-        distinct_features.extend(map(lambda x: ':'.join([x, transforms]) if transforms else x, new_features))
+
+        distinct_features.extend(
+            map(lambda x: ":".join([x, transforms]) if transforms else x, new_features)
+        )
     return tuple(sorted(set(distinct_features)))
 
 
 def create_embedding_function(
     features: Tuple[str, ...],
     bins_per_feature: int,
-    histogram_ranges: Optional[List[Tuple[int, int]]] = None, # if histogram ranges are given, it means we want a histogram, else raw vector is returned
+    histogram_ranges: Optional[
+        List[Tuple[int, int]]
+    ] = None,  # if histogram ranges are given, it means we want a histogram, else raw vector is returned
 ) -> Callable[[nk.Graph], np.ndarray | List[np.ndarray]]:
 
     distinct_features = normalize_features(features)

@@ -1,4 +1,3 @@
-
 import numpy as np
 
 from src.collision_tests.utils import TestParameters, open_test_enviroment
@@ -12,7 +11,9 @@ def select_problematic_ids(
 ) -> Dict[str, list[int]]:
     """goes through all the graphs and selects only the ones that have collisions on embedding"""
 
-    graph_reader, embedding_function = open_test_enviroment(parameters, **function_kwargs)
+    graph_reader, embedding_function = open_test_enviroment(
+        parameters, **function_kwargs
+    )
 
     collisions: dict[str, list[int]] = {}
     hashes: dict[str, int] = {}
@@ -37,7 +38,9 @@ def find_optimal_histogram_ranges(
     """function that goes through all descriptor values per graphs and finds minimum and maximum of each feature value"""
 
     dataset = parameters.dataset
-    graph_reader, embedding_function = open_test_enviroment(parameters, **function_kwargs)
+    graph_reader, embedding_function = open_test_enviroment(
+        parameters, **function_kwargs
+    )
     metadata = dataset.get_metadata()
 
     first_graph = next(graph_reader)
@@ -62,23 +65,24 @@ def find_optimal_histogram_ranges(
     # in situation that range is too small and there is no way to fit all bins into
     for i, range in enumerate(hist_ranges):
         right, left = range[1], range[0]
-        if not np.isfinite(right): right = 0
-        if not np.isfinite(left): left = 0
+        if not np.isfinite(right):
+            right = 0
+        if not np.isfinite(left):
+            left = 0
 
         x_min = np.float32(left)
         x_max = np.float32(right)
-        
+
         scale = max(abs(x_min), abs(x_max))
-        ulp = np.spacing(np.float32((scale))) # Unit in the Last Place - distance between two representable numbers
-        
-        d_min = metadata['number_of_nodes']**2 * ulp
+        ulp = np.spacing(
+            np.float32((scale))
+        )  # Unit in the Last Place - distance between two representable numbers
+
+        d_min = metadata["number_of_nodes"] ** 2 * ulp
         if d_min <= right - left:
             hist_ranges[i] = (left, right)
         else:
             avg = (right - left) // 2
             hist_ranges[i] = (avg + d_min, avg + d_min)
 
-
     return hist_ranges
-
-

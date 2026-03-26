@@ -8,22 +8,21 @@ import numpy as np
 
 
 from dataclasses import dataclass
-from typing import Callable, Generator, Tuple
+from typing import Callable, Tuple
 
 
 @dataclass
-class TestParameters():
+class TestParameters:
     features: Tuple[str, ...]
     dataset: Dataset
 
     def create_dict(self):
-        return {
-            'features' : np.array(self.features),
-            'dataset_name' : self.dataset.name
-        }
+        return {"features": np.array(self.features), "dataset_name": self.dataset.name}
 
 
-def open_test_enviroment(parameters: TestParameters, **function_kwargs) -> Tuple[Dataset, Callable[[nk.Graph],np.ndarray]]:
+def open_test_enviroment(
+    parameters: TestParameters, **function_kwargs
+) -> Tuple[Dataset, Callable[[nk.Graph], np.ndarray]]:
 
     metadata = parameters.dataset.get_metadata()
 
@@ -61,5 +60,3 @@ def _values_equal(a, b):
 
 def _row_matches(row, criteria):
     return all(_values_equal(row[k], v) for k, v in criteria.items())
-
-
