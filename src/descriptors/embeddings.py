@@ -1,25 +1,31 @@
 from typing import Callable, List, Optional, Tuple
 
-import networkit as nk
 import numpy as np
 
 from .edge_descriptors import edge_descriptors_dict
 from .node_descriptors import node_descriptors_dict
-from .transforms import get_transform
+from .transforms import get_transform, identity_transform
+from ..graph_utils.dataset import Graph
 
 
-def get_function(name: str) -> Callable[[nk.Graph], np.ndarray | list[np.ndarray]]:
+def get_function(name: str) -> Callable[[Graph], np.ndarray | list[np.ndarray]]:
 
     parts = name.split(":")
     transforms = parts[1:]
     name = parts[0]
 
-    functions = [get_transform(transform_str) for transform_str in transforms]
+    functions = (
+        [get_transform(transform_str) for transform_str in transforms]
+        if transforms
+        else [identity_transform]
+    )
 
     if name in edge_descriptors_dict:
         functions.append(edge_descriptors_dict[name])
     elif name in node_descriptors_dict:
         functions.append(node_descriptors_dict[name])
+    else:
+        raise ValueError(f"Unknown function name: {name}")
 
     def chained(x):
         for f in functions:
@@ -27,8 +33,6 @@ def get_function(name: str) -> Callable[[nk.Graph], np.ndarray | list[np.ndarray
         return x
 
     return chained
-
-    raise ValueError(f"Unknown function name: {name}")
 
 
 def normalize_features(features: Tuple[str, ...]) -> Tuple[str, ...]:
@@ -67,13 +71,13 @@ def create_embedding_function(
     histogram_ranges: Optional[
         List[Tuple[int, int]]
     ] = None,  # if histogram ranges are given, it means we want a histogram, else raw vector is returned
-) -> Callable[[nk.Graph], np.ndarray | List[np.ndarray]]:
+) -> Callable[[Graph], np.ndarray | List[np.ndarray]]:
 
     distinct_features = normalize_features(features)
 
     feature_functions = list(map(lambda x: get_function(x), distinct_features))
 
-    def combined_features(graph: nk.Graph) -> np.ndarray | List[np.ndarray]:
+    def combined_features(graph: Graph) -> np.ndarray | List[np.ndarray]:
 
         edge_features = list(map(lambda f: f(graph), feature_functions))
 

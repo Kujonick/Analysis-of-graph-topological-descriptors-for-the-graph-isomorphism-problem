@@ -1,25 +1,25 @@
 from typing import Generator, Dict
-from src.settings import Settings
-
+from pathlib import Path
 import networkit as nk
 import networkx as nx
 import json
 import os
+
+from src.settings import Settings
 
 
 METADATA_PATH = Settings.raw_metadata_path
 
 
 def read_graph6(
-    name: str,
-    output_format: str = "networkit",
+    name: str, output_format: str = "networkit", dir: Path = Settings.raw_datasets_dir
 ) -> Generator[nk.Graph, None, None]:
 
     def output_mapper(graph: nx.Graph):
         return nk.nxadapter.nx2nk(graph) if output_format == "networkit" else graph
 
     filename = f"{name}.g6" if ".g6" not in name else name
-    path = Settings.raw_datasets_dir / filename
+    path = dir / filename
 
     with open(path, "r") as f:
         for line in map(str.strip, f):
