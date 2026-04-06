@@ -38,19 +38,19 @@ def find_optimal_histogram_ranges(
     """function that goes through all descriptor values per graphs and finds minimum and maximum of each feature value"""
 
     dataset = parameters.dataset
-    graph_reader, embedding_function = open_test_enviroment(
+    graph_dataset, embedding_function = open_test_enviroment(
         parameters, **function_kwargs
     )
     metadata = dataset.get_metadata()
 
-    first_graph = next(graph_reader)
+    first_graph = graph_dataset[0]
     function_values: List[np.ndarray] = embedding_function(first_graph)
     function_values = [arr[~np.isnan(arr)] for arr in function_values]
     hist_ranges: List[Tuple[float, float]] = [
         (np.min(arr), np.max(arr)) if len(arr) else (np.inf, -np.inf)
         for arr in function_values
     ]
-    for graph in graph_reader:
+    for graph in graph_dataset:
         function_values = embedding_function(graph)
         function_values = [arr[~np.isnan(arr)] for arr in function_values]
         hist_ranges = [

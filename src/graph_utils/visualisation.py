@@ -1,15 +1,18 @@
-from typing import Union, Optional, Dict
+from typing import Optional, Dict
 
 import networkit as nk
 import networkx as nx
 
 
-def plot_graph(
-    graph: Union[nx.Graph, nk.Graph], layout: Optional[Dict] = None, ax=None
-) -> None:
+def plot_graph(graph: nk.Graph, layout: Optional[Dict] = None, ax=None) -> None:
+    edge_labels = None
 
-    if isinstance(graph, nk.Graph):
-        graph = nk.nxadapter.nk2nx(graph)
+    edge_labels = {}
+    for u, v in graph.iterEdges():
+        eid = graph.edgeId(u, v)
+        edge_labels[(u, v)] = str(eid)
+
+    graph = nk.nxadapter.nk2nx(graph)
 
     if layout is None:
         layout = nx.kamada_kawai_layout(graph)
@@ -23,3 +26,12 @@ def plot_graph(
         pos=layout,
         ax=ax,
     )
+
+    if edge_labels is not None:
+        nx.draw_networkx_edge_labels(
+            graph,
+            pos=layout,
+            edge_labels=edge_labels,
+            font_size=8,
+            ax=ax,
+        )

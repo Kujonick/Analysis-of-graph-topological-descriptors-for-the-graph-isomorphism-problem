@@ -7,6 +7,7 @@ import networkit as nk
 import psutil
 import numpy as np
 import pandas as pd
+import traceback
 
 from src.collision_tests.tasks import select_problematic_ids
 from src.collision_tests.tasks import find_optimal_histogram_ranges
@@ -40,18 +41,26 @@ def single_test(parameters: TestParameters, histogram_ranges) -> np.ndarray:
 def single_histogram_range_calc(
     parameters: TestParameters, features_to_be_used: Tuple[str, ...]
 ) -> List[Tuple[float, float]]:
-    nk.setNumberOfThreads(1)
+    try:
+        nk.setNumberOfThreads(1)
 
-    parameters2 = TestParameters(
-        features=features_to_be_used, dataset=parameters.dataset
-    )
-    histogram_ranges = find_optimal_histogram_ranges(parameters2)
-    return histogram_ranges
+        parameters2 = TestParameters(
+            features=features_to_be_used, dataset=parameters.dataset
+        )
+        histogram_ranges = find_optimal_histogram_ranges(parameters2)
+        return histogram_ranges
+    except (
+        Exception
+    ) as e:  # Errors in multi-thread run are not visible, so we print them here
+        print("ERROR:", e)
+        traceback.print_exc()
+        raise
 
 
 class TestOperator:
-    def __init__(self, single_thread: bool = False):
+    def __init__(self, single_thread: bool = False, cpu_use: int = CPU_COUNT):
         self.single_thread = single_thread
+        self.cpu_count = cpu_use
         output_path = os.path.join(SAVING_PATH, "table.parquet")
         self.output_path = output_path
 
@@ -114,7 +123,7 @@ class TestOperator:
     ):
         n_jobs = len(features_for_histogram_calc)
         histogram_ranges_batch: List[List[Tuple[float, float]]] = Parallel(
-            n_jobs=n_jobs
+            n_jobs=n_jobs, backend="threading"
         )(
             delayed(single_histogram_range_calc)(parameters, features_to_be_used)
             for parameters, features_to_be_used in features_for_histogram_calc
@@ -169,9 +178,9 @@ class TestOperator:
                     progress_bar.update(1)
                     features_for_histogram_calc.clear()
 
-                elif len(features_for_histogram_calc) == CPU_COUNT:
+                elif len(features_for_histogram_calc) == self.cpu_count:
                     self._run_parralell_histograms(features_for_histogram_calc)
-                    progress_bar.update(CPU_COUNT)
+                    progress_bar.update(self.cpu_count)
 
                     features_for_histogram_calc.clear()
 
@@ -180,7 +189,7 @@ class TestOperator:
                 progress_bar.update(len(features_for_histogram_calc))
 
     def calculate_collisions(self, filtered_parameters: List[TestParameters]):
-        step = 1 if self.single_thread else CPU_COUNT
+        step = 1 if self.single_thread else self.cpu_count
 
         with tqdm(total=len(filtered_parameters)) as progress_bar:
             for i in range(0, len(filtered_parameters), step):
@@ -199,7 +208,7 @@ class TestOperator:
                     )
                     results = [result]
                 else:
-                    results = Parallel(n_jobs=CPU_COUNT)(
+                    results = Parallel(n_jobs=self.cpu_count, backend="threading")(
                         delayed(single_test)(parameters, histogram_ranges)
                         for parameters, histogram_ranges in zip(
                             parameters_batch, histogram_ranges_batch

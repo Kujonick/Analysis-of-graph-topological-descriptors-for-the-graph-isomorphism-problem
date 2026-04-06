@@ -95,7 +95,13 @@ def calculate_resource_allocation_index(graph: nk.Graph) -> np.ndarray:
 
 @add_to_dict("same_community")
 def calculate_same_community_index(graph: nk.Graph) -> np.ndarray:
-    return link_predictor_template(SameCommunityIndex, graph)
+    prev_num_threads = (
+        nk.engineering.getCurrentNumberOfThreads()
+    )  # this one is to make the same_community_index deterministic. The multithreaded version is giving different outputs sometimes.
+    nk.setNumberOfThreads(1)  #
+    result = link_predictor_template(SameCommunityIndex, graph)
+    nk.setNumberOfThreads(prev_num_threads)
+    return result
 
 
 @add_to_dict("total_nieghbors")
@@ -122,7 +128,7 @@ def calculate_adjusted_rand_index(graph: nk.Graph) -> np.ndarray:
 
 @add_to_dict("lds")
 def local_degree_score(graph: nk.Graph) -> np.ndarray:
-    graph.indexEdges()
+    # graph.indexEdges()
     local_degree_score = LocalDegreeScore(graph)
     local_degree_score.run()
     scores = local_degree_score.scores()
@@ -131,7 +137,7 @@ def local_degree_score(graph: nk.Graph) -> np.ndarray:
 
 @add_to_dict("scan")
 def calculate_scan_structural_similarity_score(graph: nk.Graph) -> np.ndarray:
-    graph.indexEdges()
+    # graph.indexEdges()
     triangles = TriangleEdgeScore(graph)
     triangles.run()
     triangles = triangles.scores()
@@ -144,7 +150,7 @@ def calculate_scan_structural_similarity_score(graph: nk.Graph) -> np.ndarray:
 
 @add_to_dict("cn_quadrangle")
 def calculate_CN_quadrangle_edge_score(graph: nk.Graph) -> np.ndarray:
-    graph.indexEdges()
+    # graph.indexEdges()
     desc = ChibaNishizekiQuadrangleEdgeScore(graph)
     desc.run()
     return np.array(desc.scores(), np.float32)
@@ -152,7 +158,7 @@ def calculate_CN_quadrangle_edge_score(graph: nk.Graph) -> np.ndarray:
 
 @add_to_dict("cn_triangle")
 def calculate_CN_triangle_edge_score(graph: nk.Graph) -> np.ndarray:
-    graph.indexEdges()
+    # graph.indexEdges()
     desc = ChibaNishizekiTriangleEdgeScore(graph)
     desc.run()
     return np.array(desc.scores(), np.float32)
@@ -160,7 +166,7 @@ def calculate_CN_triangle_edge_score(graph: nk.Graph) -> np.ndarray:
 
 @add_to_dict("lss")
 def calculate_local_similarity_sparsification(graph: nk.Graph) -> np.ndarray:
-    graph.indexEdges()
+    # graph.indexEdges()
     triangles = TriangleEdgeScore(graph)
     triangles.run()
     triangles = triangles.scores()
@@ -173,7 +179,7 @@ def calculate_local_similarity_sparsification(graph: nk.Graph) -> np.ndarray:
 
 @add_to_dict("simmelian_sparsifier_np")  # Np - non parametric
 def calculate_simmelian_sparsifier(graph: nk.Graph) -> np.ndarray:
-    graph.indexEdges()
+    # graph.indexEdges()
     score = SimmelianSparsifierNonParametric()
     scores = score.scores(graph)
     return np.array(scores, np.float32)
@@ -184,7 +190,7 @@ def calculate_simmelian_sparsifier(graph: nk.Graph) -> np.ndarray:
 
 @add_to_dict("edge_betweenness", can_be_normalized=True)
 def calculate_edge_betweenness(graph: nk.Graph, normalize: bool = True) -> np.ndarray:
-    graph.indexEdges()
+    # graph.indexEdges()
     betweeness = Betweenness(graph, normalized=normalize, computeEdgeCentrality=True)
     betweeness.run()
     scores = betweeness.edgeScores()
@@ -193,7 +199,7 @@ def calculate_edge_betweenness(graph: nk.Graph, normalize: bool = True) -> np.nd
 
 @add_to_dict("spanning_edge")
 def calculate_spanning_edge_centrality(graph: nk.Graph) -> np.ndarray:
-    graph.indexEdges()
+    # graph.indexEdges()
     betweeness = SpanningEdgeCentrality(graph)
     betweeness.run()
     scores = betweeness.scores()

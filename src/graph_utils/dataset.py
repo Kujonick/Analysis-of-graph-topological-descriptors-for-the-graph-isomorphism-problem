@@ -12,6 +12,7 @@ from ..settings import Settings
 class Graph:
     def __init__(self, dataset_dir: Path, index: int, graph: nk.Graph):
         self.index = index
+        graph.indexEdges()
         self.graph = graph
         self.dataset_dir = dataset_dir
 
@@ -115,10 +116,13 @@ class Dataset:
         self.num += 1
         return result
 
+    def __getitem__(self, key: int):
+        return self.graphs[key]
+
     def _evaluate_matedata(self) -> Dict[str, Any]:
 
         node_count: np.ndarray = np.array(
-            [graph.numberOfNodes() for graph in self.graphs]
+            [graph.graph.numberOfNodes() for graph in self.graphs]
         )
         graph_count = node_count.shape[0]
         return {
