@@ -105,16 +105,18 @@ class Dataset:
             self.graphs.append(Graph(dataset_dir, i, g_nk))
         self.len = len(self.graphs)
 
-    def __iter__(self):
-        self.num = 0
-        return self
+    # def __iter__(self):   currently there are thread race problems, maybe TODO solve later
+    #     self.num = 0
+    #     return self
 
-    def __next__(self) -> Graph:
-        if self.num >= self.len:
-            raise StopIteration
-        result = self.graphs[self.num]
-        self.num += 1
-        return result
+    # def __next__(self) -> Graph:
+    #     if self.num >= self.len:
+    #         raise StopIteration
+    #     result = self.graphs[self.num]
+    #     self.num += 1
+    #     return result
+    def __len__(self):
+        return len(self.graphs)
 
     def __getitem__(self, key: int):
         return self.graphs[key]

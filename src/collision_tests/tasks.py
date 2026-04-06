@@ -11,13 +11,14 @@ def select_problematic_ids(
 ) -> Dict[str, list[int]]:
     """goes through all the graphs and selects only the ones that have collisions on embedding"""
 
-    graph_reader, embedding_function = open_test_enviroment(
+    graph_dataset, embedding_function = open_test_enviroment(
         parameters, **function_kwargs
     )
 
     collisions: dict[str, list[int]] = {}
     hashes: dict[str, int] = {}
-    for graph_id, graph in enumerate(graph_reader):
+    for graph_id in range(len(graph_dataset)):
+        graph = graph_dataset[graph_id]
 
         embedding = embedding_function(graph)
         h = xxhash.xxh128_hexdigest(embedding.tobytes())
@@ -50,7 +51,8 @@ def find_optimal_histogram_ranges(
         (np.min(arr), np.max(arr)) if len(arr) else (np.inf, -np.inf)
         for arr in function_values
     ]
-    for graph in graph_dataset:
+    for i in range(1, len(graph_dataset)):
+        graph = graph_dataset[i]
         function_values = embedding_function(graph)
         function_values = [arr[~np.isnan(arr)] for arr in function_values]
         hist_ranges = [
@@ -63,8 +65,8 @@ def find_optimal_histogram_ranges(
         ]
 
     # in situation that range is too small and there is no way to fit all bins into
-    for i, range in enumerate(hist_ranges):
-        right, left = range[1], range[0]
+    for i, ranges in enumerate(hist_ranges):
+        right, left = ranges[1], ranges[0]
         if not np.isfinite(right):
             right = 0
         if not np.isfinite(left):
@@ -83,6 +85,6 @@ def find_optimal_histogram_ranges(
             hist_ranges[i] = (left, right)
         else:
             avg = (right - left) // 2
-            hist_ranges[i] = (avg + d_min, avg + d_min)
+            hist_ranges[i] = (avg - d_min, avg + d_min)
 
     return hist_ranges

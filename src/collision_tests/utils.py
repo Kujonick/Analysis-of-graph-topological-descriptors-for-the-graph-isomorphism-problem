@@ -26,7 +26,7 @@ def open_test_enviroment(
 
     metadata = parameters.dataset.get_metadata()
 
-    graph_reader = iter(parameters.dataset)
+    graph_reader = parameters.dataset
 
     embedding_function = create_embedding_function(
         parameters.features,
