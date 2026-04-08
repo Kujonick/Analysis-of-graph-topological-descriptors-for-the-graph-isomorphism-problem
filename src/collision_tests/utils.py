@@ -14,32 +14,32 @@ from typing import Callable, Tuple
 @dataclass
 class TestParameters:
     features: Tuple[str, ...]
-    dataset: Dataset
+    dataset_name: str
 
     def create_dict(self):
-        return {"features": np.array(self.features), "dataset_name": self.dataset.name}
+        return {"features": np.array(self.features), "dataset_name": self.dataset_name}
 
 
 def open_test_enviroment(
     parameters: TestParameters, **function_kwargs
 ) -> Tuple[Dataset, Callable[[nk.Graph], np.ndarray]]:
 
-    metadata = parameters.dataset.get_metadata()
+    dataset = Dataset(name=parameters.dataset_name)
 
-    graph_reader = parameters.dataset
+    metadata = dataset.get_metadata()
 
     embedding_function = create_embedding_function(
         parameters.features,
         bins_per_feature=metadata["number_of_nodes"] ** 2,
         **function_kwargs,
     )
-    return graph_reader, embedding_function
+    return dataset, embedding_function
 
 
 def reduce_number_of_features(
     stored_ranges_dict, parameters: TestParameters, **other_features
 ) -> Tuple[str, ...]:
-    name = parameters.dataset.name
+    name = parameters.dataset_name
     if name not in stored_ranges_dict:
         stored_ranges_dict[name] = {}
         return parameters.features

@@ -45,7 +45,7 @@ def single_histogram_range_calc(
         nk.setNumberOfThreads(1)
 
         parameters2 = TestParameters(
-            features=features_to_be_used, dataset=parameters.dataset
+            features=features_to_be_used, dataset_name=parameters.dataset_name
         )
         histogram_ranges = find_optimal_histogram_ranges(parameters2)
         return histogram_ranges
@@ -105,7 +105,7 @@ class TestOperator:
     ):
 
         for feature, ranges in zip(features_to_update, histogram_ranges):
-            self.histogram_ranges[parameters.dataset.name][feature] = (
+            self.histogram_ranges[parameters.dataset_name][feature] = (
                 float(ranges[0]),
                 float(ranges[1]),
             )
@@ -114,7 +114,7 @@ class TestOperator:
         self, parameters: TestParameters
     ) -> List[Tuple[float, float]]:
         return [
-            self.histogram_ranges[parameters.dataset.name][feature]
+            self.histogram_ranges[parameters.dataset_name][feature]
             for feature in parameters.features
         ]
 
@@ -123,7 +123,7 @@ class TestOperator:
     ):
         n_jobs = len(features_for_histogram_calc)
         histogram_ranges_batch: List[List[Tuple[float, float]]] = Parallel(
-            n_jobs=n_jobs, backend="threading"
+            n_jobs=n_jobs
         )(
             delayed(single_histogram_range_calc)(parameters, features_to_be_used)
             for parameters, features_to_be_used in features_for_histogram_calc
@@ -139,7 +139,7 @@ class TestOperator:
 
     def _run_single_histogram(self, parameters, features_to_be_used):
         parameters2 = TestParameters(
-            features=features_to_be_used, dataset=parameters.dataset
+            features=features_to_be_used, dataset_name=parameters.dataset_name
         )
         histogram_ranges = find_optimal_histogram_ranges(parameters2)
 
@@ -208,7 +208,7 @@ class TestOperator:
                     )
                     results = [result]
                 else:
-                    results = Parallel(n_jobs=self.cpu_count, backend="threading")(
+                    results = Parallel(n_jobs=self.cpu_count)(
                         delayed(single_test)(parameters, histogram_ranges)
                         for parameters, histogram_ranges in zip(
                             parameters_batch, histogram_ranges_batch
