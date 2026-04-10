@@ -1,6 +1,5 @@
 from typing import Dict, Any, List
 import numpy as np
-from pathlib import Path
 import json
 import networkit as nk
 import networkx as nx
@@ -10,23 +9,26 @@ from ..settings import Settings
 
 
 class Graph:
-    def __init__(self, dataset_dir: Path, index: int, graph: nk.Graph):
+    def __init__(
+        self,
+        dataset_name: str,
+        index: int,
+        graph: nk.Graph,
+        k_graphs: Dict[str, nk.Graph],
+    ):
         self.index = index
         graph.indexEdges()
         self.graph = graph
-        self.dataset_dir = dataset_dir
+        self.dataset_name = dataset_name
 
-        self.k_graph_cache_dir = dataset_dir / str(index)
-        if not self.k_graph_cache_dir.exists():
-            self.k_graph_cache_dir.mkdir()
-
-        self.k_graphs = {}
-        for path in self.k_graph_cache_dir.iterdir():
-            graph = list(read_graph6(path.stem, dir=path.parents[0]))[0]
-            graph.indexEdges()
-            self.k_graphs[path.stem] = graph
-
+        self.k_graphs = k_graphs
+        for g in self.k_graphs.values():
+            g.indexEdges()
         self.dmatrix = self.distance_matrix()
+
+    @staticmethod
+    def get_kgraph_name(k: int, modified: bool) -> str:
+        return ("mod" if modified else "") + str(k)
 
     def distance_matrix(self) -> np.ndarray:
         APSP = nk.distance.APSP(self.graph)
@@ -59,32 +61,35 @@ class Graph:
         new_graph.addEdges((edges[0], edges[1]))
         return new_graph
 
-    @staticmethod
-    def _write_kgraph(graph: nk.Graph, path: Path):
-        G_nx = nk.nxadapter.nk2nx(graph)
-        G_nx = nx.convert_node_labels_to_integers(G_nx)
-        nx.write_graph6(G_nx, path)
-
-    def generate_kgraph(self, k: int, modified: bool):
-        name = ("mod" if modified else "") + str(k)
-        path = self.k_graph_cache_dir / f"{name}.g6"
-        if path.exists():
+    def generate_kgraph(self, k: int, modified: bool) -> nk.Graph:
+        name = self.get_kgraph_name(k, modified)
+        if name in self.k_graphs:
             return
         if modified:
             graph = self._create_modified_k_graph(k)
-        graph = self._create_k_graph(k)
-        self._write_kgraph(graph, path)
+        else:
+            graph = self._create_k_graph(k)
         self.k_graphs[name] = graph
+        return graph
 
     def get_k_graph(self, k: int, modified: bool = False) -> nk.Graph:
-        name = ("mod" if modified else "") + str(k)
+        name = self.get_kgraph_name(k, modified)
 
         graph = self.k_graphs.get(name, None)
         if graph is None:
             raise ValueError(
-                f"Not precomputed graph parameters for {self.dataset_dir=}, {self.index=}, {k=}, {modified=}"
+                f"Not precomputed graph parameters for {self.dataset_name=}, {self.index=}, {k=}, {modified=}"
             )
         return graph
+
+
+def serialize_graph(G_nk: nk.Graph) -> str:
+    G_nx = nk.nxadapter.nk2nx(G_nk)
+    G_nx = nx.convert_node_labels_to_integers(G_nx)
+
+    g6_bytes = nx.to_graph6_bytes(G_nx, header=False)
+    g6_string = g6_bytes.decode().strip()
+    return g6_string
 
 
 class Dataset:
@@ -93,16 +98,36 @@ class Dataset:
         name: str,
         output_format: str = "networkit",
     ) -> None:
-
-        dataset_dir = Settings.k_graph_dir / name
-        if not dataset_dir.exists():
-            dataset_dir.mkdir()
-
+        # base graphs read
         self.name = name
         nk_graphs: List[nk.Graph] = list(read_graph6(name, output_format=output_format))
+
+        # k-graph cache read
+        self.k_graph_cache_dir = Settings.k_graph_dir / name
+        if not self.k_graph_cache_dir.exists():
+            self.k_graph_cache_dir.mkdir()
+
+        k_graphs_datasets = {}
+        for path in self.k_graph_cache_dir.iterdir():
+            k_graphs_datasets[path.stem] = list(
+                read_graph6(path.stem, dir=path.parents[0])
+            )
+
+        self.existing_caches = set(k_graphs_datasets.keys())
+
         self.graphs: List[Graph] = []
         for i, g_nk in enumerate(nk_graphs):
-            self.graphs.append(Graph(dataset_dir, i, g_nk))
+            self.graphs.append(
+                Graph(
+                    name,
+                    i,
+                    g_nk,
+                    {
+                        k_name: k_graph_list[i]
+                        for k_name, k_graph_list in k_graphs_datasets.items()
+                    },
+                )
+            )
         self.len = len(self.graphs)
 
     # def __iter__(self):   currently there are thread race problems, maybe TODO solve later
@@ -116,7 +141,7 @@ class Dataset:
     #     self.num += 1
     #     return result
     def __len__(self):
-        return len(self.graphs)
+        return self.len
 
     def __getitem__(self, key: int):
         return self.graphs[key]
@@ -146,5 +171,15 @@ class Dataset:
         return metadata[name]
 
     def generate_k_graph_cache(self, k: int, modified: bool = False):
+        name = Graph.get_kgraph_name(k, modified)
+        if name in self.existing_caches:
+            return
+        kgraphs = []
         for graph in self.graphs:
-            graph.generate_kgraph(k, modified)
+            kgraphs.append(graph.generate_kgraph(k, modified))
+
+        serialized = "\n".join(map(serialize_graph, kgraphs))
+        cache_path = self.k_graph_cache_dir / (name + ".g6")
+        with open(cache_path, "w") as f:
+            f.write(serialized)
+        self.existing_caches.add(name)

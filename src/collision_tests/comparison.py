@@ -58,9 +58,9 @@ def single_histogram_range_calc(
 
 
 class TestOperator:
-    def __init__(self, single_thread: bool = False, cpu_use: int = CPU_COUNT):
+    def __init__(self, single_thread: bool = False, batch_size: int = CPU_COUNT):
         self.single_thread = single_thread
-        self.cpu_count = cpu_use
+        self.batch_size = batch_size
         output_path = os.path.join(SAVING_PATH, "table.parquet")
         self.output_path = output_path
 
@@ -123,7 +123,7 @@ class TestOperator:
     ):
         n_jobs = len(features_for_histogram_calc)
         histogram_ranges_batch: List[List[Tuple[float, float]]] = Parallel(
-            n_jobs=n_jobs
+            n_jobs=n_jobs, batch_size=1
         )(
             delayed(single_histogram_range_calc)(parameters, features_to_be_used)
             for parameters, features_to_be_used in features_for_histogram_calc
@@ -178,9 +178,9 @@ class TestOperator:
                     progress_bar.update(1)
                     features_for_histogram_calc.clear()
 
-                elif len(features_for_histogram_calc) == self.cpu_count:
+                elif len(features_for_histogram_calc) == self.batch_size:
                     self._run_parralell_histograms(features_for_histogram_calc)
-                    progress_bar.update(self.cpu_count)
+                    progress_bar.update(self.batch_size)
 
                     features_for_histogram_calc.clear()
 
@@ -189,7 +189,7 @@ class TestOperator:
                 progress_bar.update(len(features_for_histogram_calc))
 
     def calculate_collisions(self, filtered_parameters: List[TestParameters]):
-        step = 1 if self.single_thread else self.cpu_count
+        step = 1 if self.single_thread else self.batch_size
 
         with tqdm(total=len(filtered_parameters)) as progress_bar:
             for i in range(0, len(filtered_parameters), step):
@@ -208,7 +208,7 @@ class TestOperator:
                     )
                     results = [result]
                 else:
-                    results = Parallel(n_jobs=self.cpu_count)(
+                    results = Parallel(n_jobs=self.batch_size, batch_size=1)(
                         delayed(single_test)(parameters, histogram_ranges)
                         for parameters, histogram_ranges in zip(
                             parameters_batch, histogram_ranges_batch
