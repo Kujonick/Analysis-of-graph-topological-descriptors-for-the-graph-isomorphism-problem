@@ -1,6 +1,6 @@
 import json
 import os
-from tqdm.auto import tqdm
+from tqdm import tqdm
 from typing import Dict, List, Tuple
 from joblib import Parallel, delayed
 import networkit as nk
