@@ -20,15 +20,16 @@ def read_graph6(
 
     filename = f"{name}.g6" if ".g6" not in name else name
     path = dir / filename
-
     with open(path, "r") as f:
-        for line in map(str.strip, f):
-            if not line:
-                continue
+        content = f.read()
+    content = content.split("\n")
+    for line in map(str.strip, content):
+        if not line:
+            continue
 
-            graph = nx.from_graph6_bytes(line.encode())
-            graph = output_mapper(graph)
-            yield graph
+        graph = nx.from_graph6_bytes(line.encode())
+        graph = output_mapper(graph)
+        yield graph
 
 
 def read_metadata() -> Dict[str, dict]:

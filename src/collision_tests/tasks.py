@@ -1,9 +1,8 @@
 import numpy as np
+import xxhash
+from typing import Dict, List, Tuple
 
 from src.collision_tests.utils import TestParameters, open_test_enviroment
-import xxhash
-
-from typing import Dict, List, Tuple
 
 
 def select_problematic_ids(
@@ -38,11 +37,10 @@ def find_optimal_histogram_ranges(
 ) -> List[Tuple[float, float]]:
     """function that goes through all descriptor values per graphs and finds minimum and maximum of each feature value"""
 
-    dataset = parameters.dataset
     graph_dataset, embedding_function = open_test_enviroment(
         parameters, **function_kwargs
     )
-    metadata = dataset.get_metadata()
+    metadata = graph_dataset.get_metadata()
 
     first_graph = graph_dataset[0]
     function_values: List[np.ndarray] = embedding_function(first_graph)
