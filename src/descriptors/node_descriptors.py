@@ -10,6 +10,7 @@ from networkit.centrality import (
     DegreeCentrality,
     KatzCentrality,
     LocalClusteringCoefficient,
+    Betweenness,
 )
 
 node_descriptors_dict = {}
@@ -144,6 +145,13 @@ def calculate_katz_centrality(graph: nk.Graph) -> np.ndarray:
 @add_to_dict("lcc")
 def calculate_lcc(graph: nk.Graph) -> np.ndarray:
     desc = LocalClusteringCoefficient(graph)
+    desc.run()
+    return np.array(desc.scores(), np.float32)
+
+
+@add_to_dict("betweenness", can_be_normalized=True)
+def calculate_betweenness(graph: nk.Graph, normalize: bool) -> np.ndarray:
+    desc = Betweenness(graph, normalized=normalize)
     desc.run()
     return np.array(desc.scores(), np.float32)
 
