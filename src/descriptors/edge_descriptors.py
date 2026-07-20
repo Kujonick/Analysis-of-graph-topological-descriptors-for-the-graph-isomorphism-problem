@@ -56,11 +56,13 @@ def add_to_dict(name, can_be_normalized=False):
 
 
 @add_to_dict("jaccard_index", can_be_normalized=True)
-def jaccard_index(graph: nk.Graph, normalize: bool = True) -> np.ndarray:
-    if normalize:
-        return link_predictor_template(JaccardIndex, graph)
-    else:
-        return link_predictor_template(CommonNeighborsIndex, graph)
+def jaccard_index(graph: nk.Graph) -> np.ndarray:
+    return link_predictor_template(JaccardIndex, graph)
+
+
+@add_to_dict("common_neigbours", can_be_normalized=True)
+def common_neigbours(graph: nk.Graph) -> np.ndarray:
+    return link_predictor_template(CommonNeighborsIndex, graph)
 
 
 @add_to_dict("adamic_adar")
