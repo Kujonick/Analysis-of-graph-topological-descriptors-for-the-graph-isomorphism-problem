@@ -55,12 +55,12 @@ def add_to_dict(name, can_be_normalized=False):
 # =========== linkprediction
 
 
-@add_to_dict("jaccard_index", can_be_normalized=True)
+@add_to_dict("jaccard_index")
 def jaccard_index(graph: nk.Graph) -> np.ndarray:
     return link_predictor_template(JaccardIndex, graph)
 
 
-@add_to_dict("common_neigbours", can_be_normalized=True)
+@add_to_dict("common_neigbours")
 def common_neigbours(graph: nk.Graph) -> np.ndarray:
     return link_predictor_template(CommonNeighborsIndex, graph)
 
