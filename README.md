@@ -8,7 +8,11 @@ To setup the project, you will need [uv](https://github.com/astral-sh/uv). You c
 ```
 uv sync
 source .venv/bin/activate
-python main.py
+```
+### Datasets
+After creating venv and activating it, to download the datasets and menage their directories just run:
+```
+python setup.py
 ```
 
 ### Precommit 
