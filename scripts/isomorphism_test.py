@@ -41,28 +41,50 @@ def permute_graph(graph: nk.Graph, layout=None, permutation=None) -> nk.Graph:
     return graph_perm, new_layout
 
 
+def recursive_size(obj, seen=None):
+    if seen is None:
+        seen = set()
+
+    obj_id = id(obj)
+    if obj_id in seen:
+        return 0
+    seen.add(obj_id)
+
+    size = sys.getsizeof(obj)
+
+    if isinstance(obj, dict):
+        size += sum(
+            [recursive_size(k, seen) + recursive_size(v, seen) for k, v in obj.items()]
+        )
+    elif isinstance(obj, (list, tuple, set, frozenset)):
+        size += sum([recursive_size(item, seen) for item in obj])
+
+    return size
+
+
 n = int(sys.argv[1])
 dataset_name = f"graph{n}c"
 dataset = Dataset(dataset_name)
 
 possible_perms = list(permutations(range(n)))
 all_graphs = []
-for G in dataset:
+for G in tqdm(dataset, desc="generating_graphs"):
     graphs = []
 
     for perm in possible_perms:
-        perm_graph, perm_layout = permute_graph(G.graph)
+        perm_graph, perm_layout = permute_graph(G.graph, permutation=perm)
 
         G_perm = Graph("", 1, perm_graph, k_graphs={})
         graphs.append(G_perm)
 
     all_graphs.append(graphs)
 
+print(f"SIZE OF ALL GRAPHS: {recursive_size(all_graphs) / (1024 * 1024):.2f} MB ")
 
 descriptors = list(edge_descriptors_dict.keys()) + list(node_descriptors_dict.keys())
 
 
-for descriptor_name in tqdm(descriptors):
+for descriptor_name in tqdm(descriptors, desc="isomorphism_test"):
     # print(descriptor_name)
 
     test_function = get_function(descriptor_name)
