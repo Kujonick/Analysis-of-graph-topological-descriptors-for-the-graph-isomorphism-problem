@@ -2,6 +2,7 @@ import requests
 import gzip
 from src.settings import Settings
 import shutil
+
 settings = Settings()
 gzipped_files = {
     "sr361566",
@@ -21,7 +22,9 @@ datasets_cecs = [
     "ge10c",
     "graph4c",
     "graph5",
+    "graph5c",
     "graph6",
+    "graph6c",
     "graph7",
     "graph7c",
     "graph8",

@@ -8,6 +8,7 @@ class Settings:
     processed_datasets_dir = dataset_dir / "processed"
     k_graph_dir = dataset_dir / "kgraphs"
     brec_byproduct_graphs = dataset_dir / "brec/Data/raw"
+    isomorphism_test_dir = dataset_dir / "isomorphism_test"
 
     @classmethod
     def ensure_paths(cls):
@@ -18,6 +19,7 @@ class Settings:
             cls.k_graph_dir,
             cls.raw_metadata_path.parent,
             cls.brec_byproduct_graphs,
+            cls.isomorphism_test_dir,
         ]
 
         for d in dirs:
