@@ -24,13 +24,16 @@ class Graph:
         self.k_graphs = k_graphs
         for g in self.k_graphs.values():
             g.indexEdges()
-        self.dmatrix = self.distance_matrix()
+        self.dmatrix = None
 
     @staticmethod
     def get_kgraph_name(k: int, modified: bool) -> str:
         return ("mod" if modified else "") + str(k)
 
     def distance_matrix(self) -> np.ndarray:
+        if self.dmatrix is not None:
+            return self.dmatrix
+
         APSP = nk.distance.APSP(self.graph)
         APSP.run()
         distances = np.array(APSP.getDistances())
@@ -40,7 +43,7 @@ class Graph:
         return distances
 
     def _create_k_graph(self, k: int) -> nk.Graph:
-        distances = self.dmatrix
+        distances = self.distance_matrix()
         n = distances.shape[0]
         new_graph = nk.Graph(n)
         new_edges = distances == k
@@ -50,7 +53,7 @@ class Graph:
         return new_graph
 
     def _create_modified_k_graph(self, k: int) -> nk.Graph:
-        distances = self.dmatrix
+        distances = self.distance_matrix()
         n = distances.shape[0]
         new_graph = nk.Graph(n)
         new_edges = distances <= k  # modified creates more dense graph with more edges

@@ -63,12 +63,13 @@ def recursive_size(obj, seen=None):
 
 
 n = int(sys.argv[1])
-dataset_name = f"graph{n}c"
+dataset_name = f"graph{n}"
 dataset = Dataset(dataset_name)
 
 possible_perms = list(permutations(range(n)))
 all_graphs = []
-for G in tqdm(dataset, desc="generating_graphs"):
+for i, G in enumerate(tqdm(dataset, desc="generating_graphs")):
+
     graphs = []
 
     for perm in possible_perms:
@@ -83,7 +84,9 @@ print(f"SIZE OF ALL GRAPHS: {recursive_size(all_graphs) / (1024 * 1024):.2f} MB 
 
 descriptors = list(edge_descriptors_dict.keys()) + list(node_descriptors_dict.keys())
 
-
+###
+# descriptors = descriptors[descriptors.index('ldp_std_normalized')+1:]
+###
 for descriptor_name in tqdm(descriptors, desc="isomorphism_test"):
     # print(descriptor_name)
 
