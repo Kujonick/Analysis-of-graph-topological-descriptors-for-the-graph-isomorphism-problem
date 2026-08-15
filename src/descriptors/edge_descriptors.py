@@ -1,4 +1,4 @@
-from functools import partial
+from functools import partial, wraps
 from typing import Type
 
 import networkit as nk
@@ -39,13 +39,40 @@ def link_predictor_template(predictor: Type[LinkPredictor], graph: nk.Graph, *ar
     return np.array([descriptor.run(*e) for e in graph.iterEdges()], np.float32)
 
 
-def add_to_dict(name, can_be_normalized=False):
+def add_to_dict(
+    name,
+    can_be_normalized=False,
+    unstable=False,
+    round_digits=4,
+):
     def decorator(f):
+
+        @wraps(f)
+        def rounded(*args, **kwargs):
+            result = f(*args, **kwargs)
+            return np.round(result, decimals=round_digits)
+
         if can_be_normalized:
+            # Original versions
             edge_descriptors_dict[name] = partial(f, normalize=False)
             edge_descriptors_dict[name + "_normalized"] = partial(f, normalize=True)
+
+            # Rounded versions
+            if unstable:
+                edge_descriptors_dict[name + f"_rounded{round_digits}"] = partial(
+                    rounded, normalize=False
+                )
+                edge_descriptors_dict[name + f"_normalized_rounded{round_digits}"] = partial(
+                    rounded, normalize=True
+                )
+
         else:
+            # Original version
             edge_descriptors_dict[name] = f
+
+            # Rounded version
+            if unstable:
+                edge_descriptors_dict[name + f"_rounded{round_digits}"] = rounded
 
         return f
 
@@ -70,7 +97,7 @@ def calculate_adamic_adar_index(graph: nk.Graph) -> np.ndarray:
     return link_predictor_template(AdamicAdarIndex, graph)
 
 
-@add_to_dict("katz_index")
+@add_to_dict("katz_index", unstable=True)
 def calculate_katz_index(graph: nk.Graph) -> np.ndarray:
     return link_predictor_template(KatzIndex, graph)
 
@@ -95,7 +122,7 @@ def calculate_resource_allocation_index(graph: nk.Graph) -> np.ndarray:
     return link_predictor_template(ResourceAllocationIndex, graph)
 
 
-@add_to_dict("same_community")
+@add_to_dict("same_community", unstable=True, round_digits=3)
 def calculate_same_community_index(graph: nk.Graph) -> np.ndarray:
     prev_num_threads = (
         nk.engineering.getCurrentNumberOfThreads()
@@ -111,7 +138,7 @@ def calculate_total_nieghbors_index(graph: nk.Graph) -> np.ndarray:
     return link_predictor_template(TotalNeighborsIndex, graph)
 
 
-@add_to_dict("algebraic_distance")
+@add_to_dict("algebraic_distance", unstable=True, round_digits=4)
 def calculate_algebraic_distance_index(graph: nk.Graph) -> np.ndarray:
     descriptor = AlgebraicDistanceIndex(
         graph, 20, 200  # numberSystems
@@ -166,7 +193,7 @@ def calculate_CN_triangle_edge_score(graph: nk.Graph) -> np.ndarray:
     return np.array(desc.scores(), np.float32)
 
 
-@add_to_dict("lss")
+@add_to_dict("lss", unstable=True, round_digits=3)
 def calculate_local_similarity_sparsification(graph: nk.Graph) -> np.ndarray:
     # graph.indexEdges()
     triangles = TriangleEdgeScore(graph)
@@ -199,7 +226,7 @@ def calculate_edge_betweenness(graph: nk.Graph, normalize: bool = True) -> np.nd
     return np.array(scores, np.float32)
 
 
-@add_to_dict("spanning_edge")
+@add_to_dict("spanning_edge", unstable=True, round_digits=3)
 def calculate_spanning_edge_centrality(graph: nk.Graph) -> np.ndarray:
     # graph.indexEdges()
     betweeness = SpanningEdgeCentrality(graph)

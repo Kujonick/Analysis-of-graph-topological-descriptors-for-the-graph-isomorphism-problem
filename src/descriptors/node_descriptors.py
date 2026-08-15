@@ -16,13 +16,40 @@ from networkit.centrality import (
 node_descriptors_dict = {}
 
 
-def add_to_dict(name, can_be_normalized=False):
+def add_to_dict(
+    name,
+    can_be_normalized=False,
+    unstable=False,
+    round_digits=4,
+):
     def decorator(f):
+
+        @wraps(f)
+        def rounded(*args, **kwargs):
+            result = f(*args, **kwargs)
+            return np.round(result, decimals=round_digits)
+
         if can_be_normalized:
+            # Original versions
             node_descriptors_dict[name] = partial(f, normalize=False)
             node_descriptors_dict[name + "_normalized"] = partial(f, normalize=True)
+
+            # Rounded versions
+            if unstable:
+                node_descriptors_dict[name + f"_rounded{round_digits}"] = partial(
+                    rounded, normalize=False
+                )
+                node_descriptors_dict[name + f"_normalized_rounded{round_digits}"] = partial(
+                    rounded, normalize=True
+                )
+
         else:
+            # Original version
             node_descriptors_dict[name] = f
+
+            # Rounded version
+            if unstable:
+                node_descriptors_dict[name + f"_rounded{round_digits}"] = rounded
 
         return f
 

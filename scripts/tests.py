@@ -38,7 +38,7 @@ from src.settings import Settings
 
 
 SINGLE_FEATURES: bool = True
-CHOSEN_FEATURES: List[Tuple[str, ...]] = [("betweenness",), ("betweenness_normalized",)]
+CHOSEN_FEATURES: List[Tuple[str, ...]] = [("algebraic_distance_rounded4",), ("katz_index_rounded4",)]
 
 BENCHMARK_BREC: bool = False
 

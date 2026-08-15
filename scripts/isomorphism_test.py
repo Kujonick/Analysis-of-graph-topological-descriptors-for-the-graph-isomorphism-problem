@@ -85,7 +85,9 @@ print(f"SIZE OF ALL GRAPHS: {recursive_size(all_graphs) / (1024 * 1024):.2f} MB 
 descriptors = list(edge_descriptors_dict.keys()) + list(node_descriptors_dict.keys())
 
 ###
-# descriptors = descriptors[descriptors.index('ldp_std_normalized')+1:]
+descriptors = list(filter(lambda x: "rounded4" in x, descriptors))
+print(sorted(descriptors))
+# raise SystemExit
 ###
 for descriptor_name in tqdm(descriptors, desc="isomorphism_test"):
     # print(descriptor_name)
