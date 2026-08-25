@@ -62,8 +62,8 @@ def add_to_dict(
                 edge_descriptors_dict[name + f"_rounded{round_digits}"] = partial(
                     rounded, normalize=False
                 )
-                edge_descriptors_dict[name + f"_normalized_rounded{round_digits}"] = partial(
-                    rounded, normalize=True
+                edge_descriptors_dict[name + f"_normalized_rounded{round_digits}"] = (
+                    partial(rounded, normalize=True)
                 )
 
         else:
@@ -229,7 +229,7 @@ def calculate_edge_betweenness(graph: nk.Graph, normalize: bool = True) -> np.nd
 @add_to_dict("spanning_edge", unstable=True, round_digits=3)
 def calculate_spanning_edge_centrality(graph: nk.Graph) -> np.ndarray:
     # graph.indexEdges()
-    betweeness = SpanningEdgeCentrality(graph)
-    betweeness.run()
-    scores = betweeness.scores()
+    spanning_edge = SpanningEdgeCentrality(graph)
+    spanning_edge.run()
+    scores = spanning_edge.scores()
     return np.array(scores, np.float32)

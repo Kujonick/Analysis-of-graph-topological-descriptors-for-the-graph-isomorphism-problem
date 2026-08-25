@@ -10,7 +10,9 @@ from networkit.centrality import (
     DegreeCentrality,
     KatzCentrality,
     LocalClusteringCoefficient,
+    PageRank,
     Betweenness,
+    HarmonicCloseness,
 )
 
 node_descriptors_dict = {}
@@ -39,8 +41,8 @@ def add_to_dict(
                 node_descriptors_dict[name + f"_rounded{round_digits}"] = partial(
                     rounded, normalize=False
                 )
-                node_descriptors_dict[name + f"_normalized_rounded{round_digits}"] = partial(
-                    rounded, normalize=True
+                node_descriptors_dict[name + f"_normalized_rounded{round_digits}"] = (
+                    partial(rounded, normalize=True)
                 )
 
         else:
@@ -181,6 +183,22 @@ def calculate_betweenness(graph: nk.Graph, normalize: bool) -> np.ndarray:
     desc = Betweenness(graph, normalized=normalize)
     desc.run()
     return np.array(desc.scores(), np.float32)
+
+
+@add_to_dict("page_rank", can_be_normalized=True)
+def calculate_page_rank(graph: nk.Graph, normalize: bool = True):
+    page_rank = PageRank(graph, normalized=normalize)
+    page_rank.run()
+    scores = page_rank.scores()
+    return np.array(scores, np.float32)
+
+
+@add_to_dict("harmonic_closeness", can_be_normalized=True)
+def calculate_harmonic_closeness(graph: nk.Graph, normalize: bool = True):
+    harmonic_closeness = HarmonicCloseness(graph, normalized=normalize)
+    harmonic_closeness.run()
+    scores = harmonic_closeness.scores()
+    return np.array(scores, np.float32)
 
 
 # @add_to_dict('test')
