@@ -4,7 +4,9 @@ import networkit as nk
 import networkx as nx
 
 
-def plot_graph(graph: nk.Graph, layout: Optional[Dict] = None, ax=None) -> None:
+def plot_graph(
+    graph: nk.Graph, layout: Optional[Dict] = None, ax=None, label_edges=True
+) -> None:
     edge_labels = None
 
     edge_labels = {}
@@ -27,7 +29,7 @@ def plot_graph(graph: nk.Graph, layout: Optional[Dict] = None, ax=None) -> None:
         ax=ax,
     )
 
-    if edge_labels is not None:
+    if edge_labels is not None and label_edges:
         nx.draw_networkx_edge_labels(
             graph,
             pos=layout,
